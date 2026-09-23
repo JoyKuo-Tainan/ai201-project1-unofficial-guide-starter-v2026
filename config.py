@@ -27,13 +27,38 @@ CORPUS = os.getenv("AI201_CORPUS", "campus_life")
 # These are deliberately plain, generic numbers. Milestone 3 is where you
 # replace them with numbers that fit the documents you actually read.
 
+# These two belong to chunker.py::fallback_split only.
 CHUNK_SIZE = 800        # characters per chunk
 CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
+
+# The numbers below belong to chunker.py::split_documents, which picks one of
+# three strategies per corpus. They were set by measuring the corpora, not
+# guessed — see the table in chunker.py's docstring.
+
+# Upper bound on a chunk, not a target: a document shorter than this is never
+# cut. 900 keeps every campus_life document (longest 549) and every
+# advice_threads document (longest 793) intact, while city_guides
+# (1,436–2,510) still splits on its headings.
+MAX_CHUNK_CHARS = 900
+
+# No chunk comes out shorter than this unless the entire source document is
+# shorter than this. Short tails are merged back into the chunk before them,
+# which is what stops the 2-character chunk the old stride produced.
+MIN_CHUNK_CHARS = 30
+
+# advice_threads only. Replies run 35–222 characters, so a whole thread would
+# fit in MAX_CHUNK_CHARS as one chunk and the strategy would never separate
+# the disagreeing answers. 400 groups two or three replies per chunk instead.
+THREAD_CHUNK_CHARS = 400
+
+# advice_threads only. Neighbouring chunks share this many replies, because an
+# answer in that corpus is often spread across a reply boundary.
+THREAD_REPLY_OVERLAP = 1
 
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────
 
-TOP_K = 5               # how many chunks to pull back per question
+TOP_K = 10               # how many chunks to pull back per question
 
 # The relevance gate. If the best chunk is further away than this, the system
 # refuses to answer instead of handing the model thin material.
@@ -43,7 +68,12 @@ TOP_K = 5               # how many chunks to pull back per question
 # 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
 # measure your own two groups of distances and put the cutoff in the gap.
 # Most corpora land somewhere between 0.45 and 0.75.
-THRESHOLD = 0.6
+#
+# Measured, Milestone 4. My five questions land at 0.246-0.432; the five in
+# OUT_OF_SCOPE land at 0.825-0.934. Nothing sits between them, so the gap is
+# 0.39 wide and this is its midpoint. Rounded to two places because a third
+# would be pretending the boundary is sharper than the measurement was.
+THRESHOLD = 0.63
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────

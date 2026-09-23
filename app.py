@@ -43,7 +43,7 @@ def cmd_index(args):
     documents = load_documents(corpus)
     print(f"  loaded   {describe_docs(documents)}")
 
-    chunks = split_documents(documents)
+    chunks = split_documents(documents, corpus)
     print(f"  chunked  {describe_chunks(chunks)}")
 
     print(f"  embedding {len(chunks)} chunks (first run downloads the model)...")
@@ -103,7 +103,8 @@ def cmd_chunks(args):
     from ingest import load_documents
     from chunker import split_documents
 
-    chunks = split_documents(load_documents(args.corpus or config.CORPUS))
+    corpus = args.corpus or config.CORPUS
+    chunks = split_documents(load_documents(corpus), corpus)
 
     if args.from_doc:
         sample = _chunks_from_doc(chunks, args.from_doc)
