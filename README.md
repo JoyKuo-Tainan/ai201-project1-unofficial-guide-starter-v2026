@@ -287,16 +287,9 @@ chunker, the criteria, the questions. Both moments below come out of that, and
 both are cases where what came back was wrong in a way that took checking to
 see.
 
-**1. I asked it to fill in the README, and it refused to start.** What came back
-first was not prose but a problem: two of my five test questions — how long
-Marchwood's covered market has operated, and whether a wheelchair user could
-visit either mill museum — are `city_guides` questions, and `CORPUS` is
-`campus_life`. Those two documents are not in the index those questions would be
-tested against, so two of my five could never have passed criterion 1 no matter
-what the retrieval did. It also pointed out that `THRESHOLD` was sitting at 0.9,
-which the TODO I'd left in `criteria.md` said out loud and I'd read past.
+**1. I asked AI to create questions for me** 
 
-What I changed: the two questions, rather than the corpus. I kept what each one
+What AI changed: the two questions, rather than the corpus. I kept what each one
 was testing and rebuilt it out of `campus_life` — the Marchwood fact-lookup
 became the Old Brewhouse laundry question, which is a better test anyway because
 it lands in a family of seven near-identical sibling posts, and the two-document
@@ -338,111 +331,266 @@ this README traces back to a command I can re-run.
 
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
+`python run_eval.py --label before`, written to
+`results/run_2026-09-29_2221_before.md`. Corpus `campus_life`, `TOP_K = 10`,
+cutoff 0.63, three runs per question, caching off.
 
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
+**One change to the test set since unit 1.** Question 4 is no longer the
+Fenwick Court / library / shuttle question from the Sample Answer section above.
+Before this run I replaced it with *"How long does a student's cloud drive last
+after they graduate?"* (answer: six months, in `admin_wifi_and_accounts.txt`).
+The old question is still in `questions.py`, commented out. This matters later:
+the Fenwick question was the hardest retrieval question I had, with
+`study_library_hours.txt` down at rank 6, and its replacement is one of the
+easiest. See Diagnoses.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 4. Chunks stay about one thing (revised: ≥90% in 15–150 tokens, none > 254; ≥4 of 5 samples single-topic) | see left | 88/88 in band, 0 > 254; 4 of 5 single-topic | same | same | MET |
+| 5. The source named is the right sibling | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Not one of my five criteria, but in the same run: `scorer.py::judge`, which
+checks each answer for the `expects` phrase in `questions.py`, scored **4 of 5
+in all three runs**. STAT 150 failed every time.
+
+Real output from run 1, as `run_eval.py` wrote it:
+
+**Criterion 1**, produced by `store.py::search` (called from `run_eval.py::run_once`):
+
+```
+What is the latest date to add a course?
+  expected: admin_add_drop_deadline.txt
+  retrieved: admin_add_drop_deadline.txt, admin_declaring_a_major.txt, admin_graduation_requirements.txt, admin_pass_fail_option.txt, admin_study_abroad.txt, advising_registration.txt, course_biol_160_workload.txt, course_cs_340.txt, course_cs_340_exams.txt, course_econ_101_workload.txt
+  -> contains the answer
+
+How much is a wash in Old Brewhouse, and can I pay with a card?
+  expected: housing_old_brewhouse.txt, housing_old_brewhouse_laundry.txt
+  retrieved: housing_aldridge_hall_laundry.txt, housing_calder_annexe.txt, housing_calder_annexe_laundry.txt, housing_fenwick_court.txt, housing_fenwick_court_laundry.txt, housing_innisfree_hall.txt, housing_innisfree_hall_laundry.txt, housing_morrow_house_laundry.txt, housing_old_brewhouse.txt, housing_old_brewhouse_laundry.txt
+  -> contains the answer
+
+In STAT 150, if a student scores 90, 85, and 40 on the three midterms, what is their final grade in the course based on percentage?
+  expected: course_stat_150.txt, course_stat_150_exams.txt
+  retrieved: admin_pass_fail_option.txt, course_cs_210.txt, course_cs_210_exams.txt, course_cs_340_exams.txt, course_econ_101_exams.txt, course_hist_118.txt, course_math_220_exams.txt, course_phys_130_exams.txt, course_stat_150.txt, course_stat_150_exams.txt
+  -> contains the answer
+```
+
+(The Ridgeway and cloud-drive questions look the same: `-> contains the answer`.)
+
+**Criterion 2**, produced by `generate.py::answer_from_chunks` (caching off):
+
+```
+You can add a course through the end of the second week (admin_add_drop_deadline.txt).
+```
+```
+Based on the documents, wait times at The Ridgeway Café are 10 to 15 minutes at 12:30. Because seating is also very tight (about 40 seats), you likely will not have enough time to eat before a 12:45 class, as the documents advise going before 11:45 if you are trying to eat between classes.
+
+Sources: `dining_the_ridgeway_cafe.txt` and `dining_the_ridgeway_cafe_followup.txt`
+```
+```
+A wash in Old Brewhouse costs $1.50, and the machines are coin only, so you cannot pay with a card.
+
+Source: `housing_old_brewhouse.txt` (and `housing_old_brewhouse_laundry.txt`)
+```
+```
+A student's cloud drive stays active for six months after they graduate, and at that point, it is purged without a second warning. This comes from *admin_wifi_and_accounts.txt*.
+```
+```
+Based on the provided documents, there is no mention of how the percentage for the final grade is calculated using the midterm scores. The documents only state that there are three equally weighted midterms and the lowest midterm is dropped (from `course_stat_150_exams.txt` and `course_stat_150.txt`). Therefore, I do not have enough information to calculate the final grade percentage.
+```
+
+**Criterion 3**, produced by `run_eval.py::check_out_of_scope` → `gate.py::check`, cutoff 0.63:
+
+```
+refused  (best distance 0.825)  What is the capital of Mongolia?
+refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+refused  (best distance 0.886)  Who won the 1994 World Cup?
+refused  (best distance 0.844)  What is the recommended dosage of ibuprofen for a headache?
+refused  (best distance 0.896)  How do I write a for loop in Rust?
+-> gate refused 5 of 5
+Answer returned when refused: I don't have enough information about that.
+```
+
+**Criterion 4**: chunks read back from the index built by
+`chunker.py::split_documents/_split_short_post`, counted with the embedding
+model's tokenizer by `run_eval.py::measure_chunks`, 5 samples drawn with seed 0:
+
+```
+88 chunks · tokens: min 38, max 127, median 70.5 · in 15–150: 88 of 88 · over 254: 0
+
+===== admin_graduation_requirements.txt#0   53 tokens  282 chars
+===== course_hist_118_exams.txt#0           41 tokens  178 chars
+===== dining_north_kitchen_followup.txt#0   69 tokens  317 chars
+===== dining_the_atrium_followup.txt#0      79 tokens  341 chars
+===== housing_fenwick_court.txt#0          102 tokens  425 chars
+Fenwick Court — what it's actually like
+
+Just finished a year in this building. Built 2015. Rooms are suites of four with a shared kitchenette.
+
+The good: in-suite bathrooms, and the kitchenette means you can skip a meal plan tier.
+
+The bad: the furthest housing from central campus, about 18 minutes on foot.
+
+Laundry costs $2.00 wash, $1.75 dry, app-based. On noise: thin walls between suites; the kitchenettes carry sound.
+```
+
+(Header lines shortened; the full text of all five samples is in the results file.)
+
+**Criterion 5**: citations from `generate.py::answer_from_chunks`, checked
+against `sources` in `questions.py`:
+
+```
+How much is a wash in Old Brewhouse, and can I pay with a card?
+  expected: housing_old_brewhouse.txt, housing_old_brewhouse_laundry.txt
+  cited:    housing_old_brewhouse.txt, housing_old_brewhouse_laundry.txt
+  -> right source
+
+In STAT 150, if a student scores 90, 85, and 40 on the three midterms, what is their final grade in the course based on percentage?
+  expected: course_stat_150.txt, course_stat_150_exams.txt
+  cited:    course_stat_150.txt, course_stat_150_exams.txt
+  -> right source
+```
+
+(The other three are `-> right source` too.)
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
-
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
-
-     Milestone 2. -->
-
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunk contains the answer | MET | 5 of 5 in all three runs against a target of 4. Not close: every answer file ranks 1st for its question (checked with `store.search`), so even `TOP_K = 1` would pass. |
+| 2 | Every answer names a source | MET | All 15 answers name a file. I read them rather than trusting the regex, because the formats vary: backticks, italics, a bare filename, "(Source: ...)". |
+| 3 | Gate stops out-of-corpus questions | MET | 5 of 5 against 4. Deterministic, and the nearest out-of-scope question (0.825) is 0.195 above the cutoff. |
+| 4 | Chunks stay about one thing | MET, and close | The size half isn't close: 88 of 88 in band, max 127 tokens against a 254 ceiling. The single-topic half is exactly at target. Four samples are one thing each: graduation requirements, HIST 118 assessment, one dining hall's wait, another's wait. `housing_fenwick_court.txt` is not. It runs rooms, bathrooms, distance, laundry *and* noise together, which is the "two topics in one chunk" case the criterion names. So it's 4 of 5, and one more overview post in the sample would have been a miss. |
+| 5 | The source named is the right sibling | MET | 5 of 5 in all three runs against 4, including Old Brewhouse, where six sibling laundry posts were retrieved alongside it. |
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+**No criterion missed.** Every target held in all three runs. That isn't the
+same as the system working, and the run log says why. One question failed in
+every run, and none of my five criteria caught it.
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
+**The miss the criteria didn't see: STAT 150.** Stage: **generation**.
+Retrieval was fine: `course_stat_150_exams.txt` ranks 1st at 0.4055, with
+`course_stat_150.txt` 2nd. Both say "three equally weighted midterms, no final
+… the lowest midterm is dropped", which is everything needed for
+(90 + 85) / 2 = 87.5%. In all three runs the model restated that rule correctly
+and then refused anyway. The mechanism is in `generate.py::GROUNDING_INSTRUCTION`:
+*"Use only the information in the documents"* and *"If the documents don't
+cover the question, say you don't have enough information."* The number 87.5
+appears in no document. The model treats a number it would have to derive as
+information it doesn't have, so the anti-hallucination rule also blocks
+arithmetic on facts it does have.
 
-     The five stages: loading → chunking → embedding → retrieval → generation.
+**The pattern:** it's the only one of my five questions whose answer has to be
+computed. The other four answers are phrases copied straight out of one
+document ("the end of the second week", "six months", "$1.50 … coin only").
+The strict grounding prompt is good at copying and refuses to derive.
 
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
+**Why no criterion caught it:** criteria 1, 2 and 5 check the retrieval
+and the citation, not the answer. The STAT 150 refusal retrieved the right
+chunk, named a source, and named the right sibling, so it passed all three while
+being wrong. I flagged this at the end of unit 1 and didn't change the criteria,
+so the gap is still there.
 
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
+**My targets were set low.** Criterion 1 could not realistically fail. With
+`TOP_K = 10` out of 88 chunks, and every answer file at rank 1, "the retrieved
+chunks include one that contains the answer" is true with nine slots to spare.
+Swapping out the Fenwick question made it easier still, since that was the one
+question where an answer file sat outside the top 5. Criterion 3 was also soft:
+I measured a 0.39-wide gap in unit 1 and still left the target at 4 of 5. If I
+tightened one, it would be criterion 1: *for 5 of 5 questions the answer file
+is in the top 3, and for at least 4 of 5 the answer contains the `expects`
+phrase (`scorer.py`) in every run.* That version would have come out a MISS
+here.
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** one rule added to `GROUNDING_INSTRUCTION` in `generate.py`:
 
-**Why I picked it:**
+```
+- If the documents state a rule (how a grade is weighted, what is dropped, what a price is) and the question supplies the numbers, apply the rule to those numbers and show the working in one line. That counts as using the documents, not guessing.
+```
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+Nothing else moved: same index, same chunker, `TOP_K = 10`, cutoff 0.63.
+
+**Why I picked it:** the STAT 150 diagnosis puts the failure in the generation
+prompt, not in retrieval. The right chunk was already at rank 1, so the fix has
+to change what the model is allowed to do with that chunk, not which chunks it
+gets.
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
+`python run_eval.py --label after`, written to
+`results/run_2026-09-29_2227_after.md`.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 4. Chunks stay about one thing (revised) | see above | 88/88 in band, 0 > 254; 4 of 5 single-topic | same | same | MET |
+| 5. The source named is the right sibling | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
 
-**Did it help?**
+`scorer.py::judge`: **5, 4, 5** of 5 (before: 4, 4, 4). The STAT 150 answers:
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+```
+run 1: Dropping the lowest midterm (40) leaves 90 and 85, resulting in an average percentage of (90 + 85) / 2 = 87.5%.
+       Source: course_stat_150_exams.txt (and course_stat_150.txt)
 
-     Milestone 4. -->
+run 2: I do not have enough information to calculate the final grade percentage in STAT 150, as the documents only state that there are three equally weighted midterms with the lowest one dropped, but do not provide the weighting percentages or how other assignments (if any) factor into the final grade.
+       Sources: course_stat_150_exams.txt and course_stat_150.txt
+
+run 3: To find the grade, the lowest midterm (40) is dropped, leaving the remaining scores (90 and 85) to be equally weighted.
+       Final grade percentage = $(90 + 85) / 2 = 87.5\%$
+       Sources: course_stat_150.txt and course_stat_150_exams.txt
+```
+
+**Did it help?** Yes, but only partly, and not in a way my criteria can show.
+STAT 150 went from 0 of 3 correct to 2 of 3, and both correct runs show the
+working the new rule asked for. The other four questions still pass 3 of 3, so
+the looser prompt didn't break the copy-a-phrase answers. The gate still
+refuses 5 of 5, which I expected, because the gate runs before the model and a
+prompt change can't reach it. The criteria table is identical before and after
+because every criterion was already MET. The improvement only shows in the
+scorer line. That tells me more about my criteria than about the fix.
+
+Three runs is also not many. 0 of 3 to 2 of 3 is a real change in *kind*,
+since the model had never computed the grade before and now usually does, but
+I wouldn't claim a rate from it.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
+**No criterion is missed after the fix.** What is still broken is STAT 150
+refusing 1 time in 3, and run 2 gives a new reason. It no longer says it isn't
+allowed to calculate. It says the documents don't say whether *other
+assignments* count toward the grade. That's a fair reading of the document:
+"three equally weighted midterms, no final" never says the midterms are 100% of
+the grade. The obvious next fix is a rule like "treat the assessments a post
+lists as the complete list." I stopped short of it on purpose. It tells the
+model to assume what a document leaves out, and that would apply to every
+question in the corpus, not just this one. The failure is now partly the
+document being underspecified, and I'd rather have a system that sometimes
+flags a real gap than one that's been told to fill gaps.
 
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
+Also untested this unit: the Fenwick Court / shuttle question, which needs two
+documents at once. It's the question most likely to break criterion 1, and it
+isn't in the run log.
 
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
+I'd write criterion 1 to check the answer, not the retrieval. All five of my
+criteria check the pipeline: was the chunk retrieved, was a file named, did
+the gate fire, are chunks a sane size, is the filename the right sibling. None
+of them asks whether the answer is correct. The one real failure in this unit
+was exactly there, and it passed three criteria while being wrong. I'd replace
+criterion 1 with the tightened version in Diagnoses, top 3 plus the `expects`
+phrase in every run, so a correct-looking citation on a refusal can't count as
+a pass.
 
-     Milestone 5. -->
+I'd also keep the hard questions in the test set. Replacing the Fenwick
+question made my numbers better and my test weaker. For criterion 3, I'd add
+near-miss out-of-scope questions, about campus things the corpus doesn't
+cover (the pool, the gym), instead of five questions from other worlds. Those
+are the ones that could actually land near the cutoff.
