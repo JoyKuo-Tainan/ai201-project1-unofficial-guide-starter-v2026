@@ -88,12 +88,28 @@ with the question. 900 is where that stops, and it matters most where documents
 are long: `city_guides` runs 1,436–2,510 characters and has to be split at
 headings.
 
-I put the floor at 10 and not higher because short isn't the same as broken —
+I put the floor at 30 and not higher because short isn't the same as broken —
 "Machines take $1.75 wash, $1.50 dry, card only" is a complete answer and
-should be allowed to stand as one. 10 is only there to catch the actual defect,
+should be allowed to stand as one. 30 is only there to catch the actual defect,
 the 2-character chunk the old stride produced, which was a heading with nothing
 under it.
 
+
+> **Revised in unit 2:** At least 90% of chunks are between 15 and 150 tokens,
+> with no chunk exceeding 254 tokens. Of 5 chunks I sample, at least 4 still
+> cover a single topic.
+>
+> **Why revised:** The original measured the wrong unit. The embedding model
+> doesn't see characters, it sees WordPiece tokens, and Chroma's
+> `all-MiniLM-L6-v2` cuts every input off at 256 of them — 254 once `[CLS]` and
+> `[SEP]` are counted. Anything past that is silently left out of the embedding,
+> so 254 tokens is the real ceiling and 900 characters was only a proxy for it.
+> In `campus_life` every document is one chunk, running 38–127 tokens with a
+> median of 70, so 150 is where a chunk would start to look like two documents'
+> worth of text rather than one hall's laundry or one course's exams. The floor
+> is 15 because "Machines take $1.75 wash, $1.50 dry, card only" is 16 tokens
+> and should still count as a complete chunk. 90% rather than 100% because the
+> band is about staying focused, and only the 254 ceiling is a hard limit.
 ---
 
 ## 5. The source named is the right sibling
